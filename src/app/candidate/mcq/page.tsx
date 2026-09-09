@@ -32,6 +32,7 @@ export default function McqAssessment() {
   const [submitting, setSubmitting] = useState(false);
   const [expired, setExpired] = useState(false);
   const attemptIdRef = useRef<string>("");
+  const submitCalledRef = useRef(false);
 
   const loadQuestions = useCallback(async () => {
     const attemptId = localStorage.getItem("attemptId");
@@ -41,13 +42,14 @@ export default function McqAssessment() {
     }
     attemptIdRef.current = attemptId;
 
-    // Get attempt info for timer
     const attemptRes = await fetch(`/api/candidate/attempt?attemptId=${attemptId}`);
     const attemptData = await attemptRes.json();
 
     if (attemptData.error || !["MCQ_IN_PROGRESS"].includes(attemptData.status)) {
-      if (["MCQ_SUBMITTED", "PRACTICAL_IN_PROGRESS"].includes(attemptData.status)) {
+      if (attemptData.status === "MCQ_SUBMITTED") {
         router.push("/candidate/practical");
+      } else if (attemptData.status === "PRACTICAL_IN_PROGRESS") {
+        router.push("/candidate/practical/exam");
       } else if (["PRACTICAL_SUBMITTED", "EVALUATION_PENDING", "COMPLETED"].includes(attemptData.status)) {
         router.push("/candidate/complete");
       } else {
@@ -60,7 +62,6 @@ export default function McqAssessment() {
       setExpiresAt(new Date(attemptData.expiresAt));
     }
 
-    // Get questions
     const qRes = await fetch(`/api/candidate/questions?attemptId=${attemptId}`);
     const qData = await qRes.json();
 
@@ -79,7 +80,6 @@ export default function McqAssessment() {
     loadQuestions();
   }, [loadQuestions]);
 
-  // Timer
   useEffect(() => {
     if (!expiresAt) return;
 
@@ -91,7 +91,6 @@ export default function McqAssessment() {
         setExpired(true);
         setTimeLeft("00:00");
         clearInterval(interval);
-        // Auto-submit
         handleSubmit(true);
         return;
       }
@@ -142,7 +141,8 @@ export default function McqAssessment() {
   }
 
   async function handleSubmit(auto = false) {
-    if (submitting) return;
+    if (submitCalledRef.current) return;
+    submitCalledRef.current = true;
     setSubmitting(true);
 
     try {
@@ -157,6 +157,7 @@ export default function McqAssessment() {
       }
     } catch (err) {
       console.error("Submit error:", err);
+      submitCalledRef.current = false;
       if (!auto) alert("Submission failed. Please try again.");
     } finally {
       setSubmitting(false);
@@ -172,17 +173,17 @@ export default function McqAssessment() {
     );
   }
 
-  if (expired) {
+  if (expired && !submitting) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
-          <h2 className="text-xl font-bold text-red-600 mb-2">Time Expired</h2>
-          <p className="text-gray-600 mb-4">Your assessment time has expired. Your answers have been saved.</p>
+          <h2 className="text-xl font-bold text-red-600 mb-2">MCQ Time Expired</h2>
+          <p className="text-gray-600 mb-4">Your MCQ time has expired. Your answers have been automatically submitted.</p>
           <button
             onClick={() => router.push("/candidate/practical")}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg"
           >
-            Continue to Practical
+            Continue to Practical Assessment
           </button>
         </div>
       </div>
@@ -191,11 +192,12 @@ export default function McqAssessment() {
 
   const current = questions[currentIndex];
   const answeredCount = questions.filter((q) => q.selectedOptionId).length;
+  const unansweredCount = questions.length - answeredCount;
   const isTimeLow = expiresAt && expiresAt.getTime() - Date.now() < 5 * 60 * 1000;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f7fb]">
-      {/* Header */}
+      {/* Header with timer and global submit */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="text-sm font-medium text-gray-700">
@@ -206,9 +208,18 @@ export default function McqAssessment() {
           }`}>
             {timeLeft}
           </div>
-          <div className="text-sm font-medium text-gray-700">
-            {answeredCount}/{questions.length} answered
-            {saving && <span className="ml-2 text-blue-500">Saving...</span>}
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-700">
+              {answeredCount}/{questions.length} answered
+              {saving && <span className="ml-2 text-blue-500">Saving...</span>}
+            </span>
+            <button
+              onClick={() => setShowConfirm(true)}
+              disabled={submitting}
+              className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 transition shadow-sm"
+            >
+              Submit MCQ
+            </button>
           </div>
         </div>
       </header>
@@ -303,21 +314,13 @@ export default function McqAssessment() {
                   Previous
                 </button>
 
-                {currentIndex === questions.length - 1 ? (
-                  <button
-                    onClick={() => setShowConfirm(true)}
-                    className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition shadow-sm"
-                  >
-                    Submit MCQ
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))}
-                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition shadow-sm"
-                  >
-                    Next
-                  </button>
-                )}
+                <button
+                  onClick={() => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))}
+                  disabled={currentIndex === questions.length - 1}
+                  className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-40 transition shadow-sm"
+                >
+                  Next
+                </button>
               </div>
 
               {/* Mobile question navigator */}
@@ -339,6 +342,14 @@ export default function McqAssessment() {
                     </button>
                   ))}
                 </div>
+                {/* Mobile submit button */}
+                <button
+                  onClick={() => setShowConfirm(true)}
+                  disabled={submitting}
+                  className="w-full mt-4 px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-50 transition shadow-sm"
+                >
+                  Submit MCQ
+                </button>
               </div>
             </div>
           )}
@@ -352,11 +363,12 @@ export default function McqAssessment() {
             <h3 className="text-lg font-bold text-gray-900 mb-3">Submit MCQ Assessment?</h3>
             <div className="text-sm text-gray-600 mb-4">
               <p className="mb-2">You have answered <strong>{answeredCount}</strong> out of <strong>{questions.length}</strong> questions.</p>
-              {answeredCount < questions.length && (
-                <p className="text-amber-600">
-                  {questions.length - answeredCount} question(s) are unanswered and will not be scored.
+              {unansweredCount > 0 && (
+                <p className="text-amber-600 font-medium">
+                  {unansweredCount} question(s) are unanswered and will not be scored.
                 </p>
               )}
+              <p className="mt-2 text-gray-500">Once submitted, you cannot return to the MCQ section.</p>
             </div>
             <div className="flex gap-3">
               <button

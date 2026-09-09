@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
       assessment: {
         select: {
           id: true, name: true, instructions: true, durationMins: true,
+          mcqDurationMins: true, practicalDurationMins: true,
           totalMcqMarks: true, totalPracticalMarks: true,
         },
       },
@@ -31,11 +32,9 @@ export async function GET(req: NextRequest) {
     startedAt: attempt.startedAt?.toISOString() ?? null,
     expiresAt: attempt.expiresAt?.toISOString() ?? null,
     mcqSubmittedAt: attempt.mcqSubmittedAt?.toISOString() ?? null,
+    practicalStartedAt: attempt.practicalStartedAt?.toISOString() ?? null,
+    practicalExpiresAt: attempt.practicalExpiresAt?.toISOString() ?? null,
     practicalSubmittedAt: attempt.practicalSubmittedAt?.toISOString() ?? null,
-    mcqScore: attempt.mcqScore,
-    practicalScore: attempt.practicalScore,
-    totalScore: attempt.totalScore,
-    result: attempt.result,
     candidate: attempt.candidate,
     assessment: attempt.assessment,
     questionSet: attempt.questionSet,

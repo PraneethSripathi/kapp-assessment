@@ -37,6 +37,8 @@ model Assessment {
   description  String? @db.Text
   instructions String? @db.Text
   durationMins Int     @default(45)
+  mcqDurationMins       Int     @default(30)
+  practicalDurationMins Int     @default(15)
   active       Boolean @default(true)
 
   mcqPassingScore       Float @default(0)
@@ -152,6 +154,7 @@ model AssessmentAttempt {
   expiresAt            DateTime?
   mcqSubmittedAt       DateTime?
   practicalStartedAt   DateTime?
+  practicalExpiresAt   DateTime?
   practicalSubmittedAt DateTime?
   completedAt          DateTime?
   mcqScore             Float?

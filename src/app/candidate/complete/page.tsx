@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 
 export default function CompletePage() {
   const router = useRouter();
-  const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
+  const [valid, setValid] = useState(false);
 
   useEffect(() => {
     const attemptId = localStorage.getItem("attemptId");
@@ -22,7 +22,17 @@ export default function CompletePage() {
           router.push("/");
           return;
         }
-        setStatus(data.status);
+        if (data.status === "NOT_STARTED") {
+          router.push("/candidate/dashboard");
+        } else if (data.status === "MCQ_IN_PROGRESS") {
+          router.push("/candidate/mcq");
+        } else if (data.status === "MCQ_SUBMITTED") {
+          router.push("/candidate/practical");
+        } else if (data.status === "PRACTICAL_IN_PROGRESS") {
+          router.push("/candidate/practical/exam");
+        } else {
+          setValid(true);
+        }
       })
       .finally(() => setLoading(false));
   }, [router]);
@@ -35,6 +45,8 @@ export default function CompletePage() {
     );
   }
 
+  if (!valid) return null;
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -45,30 +57,16 @@ export default function CompletePage() {
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Assessment Complete</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Assessment Submitted Successfully</h1>
 
-          {status === "EVALUATION_PENDING" ? (
-            <p className="text-gray-600 mb-6">
-              Your assessment has been submitted successfully. Your responses are being reviewed by our evaluation team.
-              You will be notified of your results.
-            </p>
-          ) : status === "COMPLETED" ? (
-            <p className="text-gray-600 mb-6">
-              Your assessment has been evaluated. Thank you for participating.
-            </p>
-          ) : status === "EXPIRED" ? (
-            <p className="text-gray-600 mb-6">
-              Your assessment time has expired. Any answers saved before expiration have been recorded.
-            </p>
-          ) : (
-            <p className="text-gray-600 mb-6">
-              Thank you for completing the assessment.
-            </p>
-          )}
+          <p className="text-gray-600 mb-6">
+            Your assessment has been submitted successfully. Your responses are being reviewed by our evaluation team.
+            You will be notified of your results.
+          </p>
 
-          <div className="inline-block px-4 py-2 bg-gray-100 rounded-lg text-sm text-gray-600">
-            Status: <strong className="text-gray-900">{status.replace(/_/g, " ")}</strong>
-          </div>
+          <p className="text-sm text-gray-400">
+            Thank you for participating. You may now close this window.
+          </p>
         </div>
       </div>
     </div>

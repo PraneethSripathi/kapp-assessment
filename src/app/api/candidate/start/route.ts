@@ -17,7 +17,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Attempt not found" }, { status: 404 });
     }
 
-    // If already started, return existing data
     if (attempt.status !== "NOT_STARTED") {
       return NextResponse.json({
         attemptId: attempt.id,
@@ -28,7 +27,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Assign random question set
     const sets = await prisma.questionSet.findMany({
       where: { assessmentId: attempt.assessmentId },
     });
@@ -39,7 +37,8 @@ export async function POST(req: NextRequest) {
 
     const randomSet = sets[Math.floor(Math.random() * sets.length)];
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + attempt.assessment.durationMins * 60 * 1000);
+    const mcqMins = attempt.assessment.mcqDurationMins || 30;
+    const expiresAt = new Date(now.getTime() + mcqMins * 60 * 1000);
 
     const updated = await prisma.assessmentAttempt.update({
       where: { id: attemptId },
@@ -51,7 +50,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Pre-create empty responses for all questions in the set
     const questions = await prisma.question.findMany({
       where: { questionSetId: randomSet.id },
       orderBy: { orderIndex: "asc" },

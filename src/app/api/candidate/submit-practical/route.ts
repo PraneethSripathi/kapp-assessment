@@ -17,7 +17,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Attempt not found" }, { status: 404 });
     }
 
-    // Idempotent
     if (["PRACTICAL_SUBMITTED", "EVALUATION_PENDING", "COMPLETED"].includes(attempt.status)) {
       return NextResponse.json({ success: true, alreadySubmitted: true });
     }
@@ -26,20 +25,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Cannot submit practical at this stage" }, { status: 403 });
     }
 
-    if (!attempt.practicalSubmission) {
-      return NextResponse.json({ error: "No file uploaded yet" }, { status: 400 });
-    }
+    const now = new Date();
 
-    await prisma.practicalSubmission.update({
-      where: { attemptId },
-      data: { submittedAt: new Date() },
-    });
+    if (attempt.practicalSubmission) {
+      await prisma.practicalSubmission.update({
+        where: { attemptId },
+        data: { submittedAt: now },
+      });
+    }
 
     await prisma.assessmentAttempt.update({
       where: { id: attemptId },
       data: {
         status: "EVALUATION_PENDING",
-        practicalSubmittedAt: new Date(),
+        practicalSubmittedAt: now,
       },
     });
 
