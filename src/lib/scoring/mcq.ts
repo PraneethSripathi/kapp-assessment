@@ -69,10 +69,9 @@ export async function calculateFinalResult(attemptId: string) {
   const maxTotal = attempt.assessment.totalMcqMarks + attempt.assessment.totalPracticalMarks;
   const percentage = maxTotal > 0 ? (totalScore / maxTotal) * 100 : 0;
 
-  const mcqPass = mcqScore >= attempt.assessment.mcqPassingScore;
-  const practicalPass = practicalScore >= attempt.assessment.practicalPassingScore;
-  const overallPass = totalScore >= attempt.assessment.overallPassingScore;
-  const result = mcqPass && practicalPass && overallPass ? "PASS" : "FAIL";
+  const mcqPass = mcqScore >= (attempt.assessment.totalMcqMarks * 0.6);
+  const practicalPass = practicalScore >= (attempt.assessment.totalPracticalMarks * 0.6);
+  const result = mcqPass && practicalPass ? "PASS" : "FAIL";
 
   await prisma.assessmentAttempt.update({
     where: { id: attemptId },

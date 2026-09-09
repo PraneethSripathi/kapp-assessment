@@ -67,7 +67,12 @@ export async function GET(
     }
   }
 
+  const mcqCorrect = attempt.responses.filter((r) => r.isCorrect === true).length;
+  const mcqIncorrect = attempt.responses.filter((r) => r.isCorrect === false && r.selectedOptionId !== null).length;
+  const mcqUntouched = attempt.responses.length - mcqCorrect - mcqIncorrect;
+
   return NextResponse.json({
+    mcqBreakdown: { correct: mcqCorrect, incorrect: mcqIncorrect, untouched: mcqUntouched, total: attempt.responses.length },
     candidate: {
       name: attempt.candidate.name,
       email: attempt.candidate.email,
@@ -89,6 +94,9 @@ export async function GET(
       percentage: attempt.percentage,
       result: attempt.result,
       adminRemarks: attempt.adminRemarks,
+      evaluationDone: attempt.evaluationDone,
+      evaluationDoneAt: attempt.evaluationDoneAt?.toISOString(),
+      evaluationDoneBy: attempt.evaluationDoneBy,
     },
     assessment: {
       totalMcqMarks: attempt.assessment.totalMcqMarks,
@@ -104,6 +112,7 @@ export async function GET(
           uploadedAt: attempt.practicalSubmission.uploadedAt?.toISOString(),
           submittedAt: attempt.practicalSubmission.submittedAt?.toISOString(),
           score: attempt.practicalSubmission.score,
+          questionScores: attempt.practicalSubmission.questionScores,
           evaluatorNotes: attempt.practicalSubmission.evaluatorNotes,
           evaluatedAt: attempt.practicalSubmission.evaluatedAt?.toISOString(),
         }

@@ -163,6 +163,9 @@ model AssessmentAttempt {
   percentage           Float?
   result               String?
   adminRemarks         String?      @db.Text
+  evaluationDone       Boolean      @default(false)
+  evaluationDoneAt     DateTime?
+  evaluationDoneBy     String?
 
   candidate    Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   assessment   Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
@@ -203,6 +206,7 @@ model PracticalSubmission {
   uploadedAt       DateTime  @default(now())
   submittedAt      DateTime?
   score            Float?
+  questionScores   Json?
   evaluatorNotes   String?   @db.Text
   evaluatedBy      String?
   evaluatedAt      DateTime?
