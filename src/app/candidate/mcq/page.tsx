@@ -314,13 +314,21 @@ export default function McqAssessment() {
                   Previous
                 </button>
 
-                <button
-                  onClick={() => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))}
-                  disabled={currentIndex === questions.length - 1}
-                  className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-40 transition shadow-sm"
-                >
-                  Next
-                </button>
+                {currentIndex === questions.length - 1 ? (
+                  <button
+                    onClick={() => setShowConfirm(true)}
+                    className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition shadow-sm"
+                  >
+                    Submit MCQ
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setCurrentIndex(Math.min(questions.length - 1, currentIndex + 1))}
+                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition shadow-sm"
+                  >
+                    Next
+                  </button>
+                )}
               </div>
 
               {/* Mobile question navigator */}
