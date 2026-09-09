@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/admin-guard";
+import { prisma } from "@/lib/db/prisma";
 import { readFile } from "fs/promises";
 import path from "path";
 
@@ -7,18 +8,35 @@ export async function GET(req: NextRequest) {
   const { error } = await requireAdmin();
   if (error) return error;
 
-  const filePath = req.nextUrl.searchParams.get("path");
-  if (!filePath) {
-    return NextResponse.json({ error: "Missing path" }, { status: 400 });
+  const attemptId = req.nextUrl.searchParams.get("attemptId");
+  if (!attemptId) {
+    return NextResponse.json({ error: "Missing attemptId" }, { status: 400 });
   }
 
-  // Only allow files from uploads/submissions/
-  if (!filePath.startsWith("/uploads/submissions/")) {
-    return NextResponse.json({ error: "Invalid path" }, { status: 403 });
+  // Look up the submission from DB — ensures candidate-file association integrity
+  const submission = await prisma.practicalSubmission.findUnique({
+    where: { attemptId },
+    include: { attempt: { include: { candidate: true } } },
+  });
+
+  if (!submission) {
+    return NextResponse.json({ error: "No submission found for this attempt" }, { status: 404 });
   }
 
-  // Prevent path traversal
-  const filename = path.basename(filePath);
+  const fileUrl = submission.uploadedFile;
+  const downloadName = submission.originalFilename || `practical-submission-${attemptId}.xlsx`;
+
+  // If it's a Vercel Blob URL (external), redirect to it
+  if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
+    return NextResponse.redirect(fileUrl);
+  }
+
+  // Local file: serve from uploads/submissions/
+  if (!fileUrl.startsWith("/uploads/submissions/")) {
+    return NextResponse.json({ error: "Invalid file path" }, { status: 403 });
+  }
+
+  const filename = path.basename(fileUrl);
   const fullPath = path.join(process.cwd(), "uploads", "submissions", filename);
 
   try {
@@ -31,10 +49,10 @@ export async function GET(req: NextRequest) {
     return new NextResponse(fileBuffer, {
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `attachment; filename="${downloadName}"`,
       },
     });
   } catch {
-    return NextResponse.json({ error: "File not found" }, { status: 404 });
+    return NextResponse.json({ error: "File not found on server" }, { status: 404 });
   }
 }

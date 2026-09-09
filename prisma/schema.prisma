@@ -192,15 +192,17 @@ model CandidateResponse {
 }
 
 model PracticalSubmission {
-  id             String    @id @default(cuid())
-  attemptId      String    @unique
-  uploadedFile   String
-  uploadedAt     DateTime  @default(now())
-  submittedAt    DateTime?
-  score          Float?
-  evaluatorNotes String?   @db.Text
-  evaluatedBy    String?
-  evaluatedAt    DateTime?
+  id               String    @id @default(cuid())
+  attemptId        String    @unique
+  uploadedFile     String
+  originalFilename String?
+  fileSize         Int?
+  uploadedAt       DateTime  @default(now())
+  submittedAt      DateTime?
+  score            Float?
+  evaluatorNotes   String?   @db.Text
+  evaluatedBy      String?
+  evaluatedAt      DateTime?
 
   attempt               AssessmentAttempt    @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   practicalAssessmentId String?

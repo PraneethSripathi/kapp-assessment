@@ -99,6 +99,8 @@ export async function GET(
     practicalSubmission: attempt.practicalSubmission
       ? {
           uploadedFile: attempt.practicalSubmission.uploadedFile,
+          originalFilename: attempt.practicalSubmission.originalFilename,
+          fileSize: attempt.practicalSubmission.fileSize,
           uploadedAt: attempt.practicalSubmission.uploadedAt?.toISOString(),
           submittedAt: attempt.practicalSubmission.submittedAt?.toISOString(),
           score: attempt.practicalSubmission.score,

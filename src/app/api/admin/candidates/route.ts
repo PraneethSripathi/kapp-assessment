@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     include: {
       candidate: true,
       questionSet: { select: { code: true, name: true } },
-      practicalSubmission: { select: { uploadedFile: true, submittedAt: true } },
+      practicalSubmission: { select: { uploadedFile: true, originalFilename: true, fileSize: true, submittedAt: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -51,6 +51,8 @@ export async function GET(req: NextRequest) {
     percentage: a.percentage,
     result: a.result,
     practicalFile: a.practicalSubmission?.uploadedFile ?? null,
+    practicalFilename: a.practicalSubmission?.originalFilename ?? null,
+    practicalFileSize: a.practicalSubmission?.fileSize ?? null,
   }));
 
   return NextResponse.json({ candidates });
