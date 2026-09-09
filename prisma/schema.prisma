@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String
+  hashedPassword String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Candidate {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  mobile    String
+  role      String
+  createdAt DateTime @default(now())
+
+  attempts AssessmentAttempt[]
+
+  @@map("candidates")
+}
+
+model Assessment {
+  id           String  @id @default(cuid())
+  name         String
+  description  String? @db.Text
+  instructions String? @db.Text
+  durationMins Int     @default(45)
+  active       Boolean @default(true)
+
+  mcqPassingScore       Float @default(0)
+  practicalPassingScore  Float @default(0)
+  overallPassingScore    Float @default(0)
+  totalMcqMarks         Float @default(20)
+  totalPracticalMarks   Float @default(20)
+
+  questionSets         QuestionSet[]
+  practicalAssessments PracticalAssessment[]
+  attempts             AssessmentAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("assessments")
+}
+
+model QuestionSet {
+  id           String @id @default(cuid())
+  assessmentId String
+  name         String
+  code         String
+  orderIndex   Int    @default(0)
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questions  Question[]
+  attempts   AssessmentAttempt[]
+
+  @@unique([assessmentId, code])
+  @@map("question_sets")
+}
+
+model Question {
+  id            String @id @default(cuid())
+  questionSetId String
+  category      String
+  difficulty    String @default("Medium")
+  questionText  String @db.Text
+  marks         Float  @default(1)
+  orderIndex    Int
+
+  questionSet QuestionSet    @relation(fields: [questionSetId], references: [id], onDelete: Cascade)
+  options     QuestionOption[]
+  answerKey   AnswerKey?
+  responses   CandidateResponse[]
+
+  @@unique([questionSetId, orderIndex])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String @id @default(cuid())
+  questionId String
+  label      String
+  optionText String @db.Text
+
+  question  Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  responses CandidateResponse[]
+  answerKey AnswerKey[]
+
+  @@unique([questionId, label])
+  @@map("question_options")
+}
+
+model AnswerKey {
+  id              String  @id @default(cuid())
+  questionId      String  @unique
+  correctOptionId String
+  explanation     String? @db.Text
+
+  question      Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  correctOption QuestionOption @relation(fields: [correctOptionId], references: [id], onDelete: Cascade)
+
+  @@map("answer_keys")
+}
+
+model PracticalAssessment {
+  id           String  @id @default(cuid())
+  assessmentId String
+  setCode      String
+  title        String
+  instructions String? @db.Text
+  maxMarks     Float   @default(20)
+  originalFile String
+
+  assessment  Assessment           @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  submissions PracticalSubmission[]
+
+  @@unique([assessmentId, setCode])
+  @@map("practical_assessments")
+}
+
+enum AttemptStatus {
+  REGISTERED
+  NOT_STARTED
+  MCQ_IN_PROGRESS
+  MCQ_SUBMITTED
+  PRACTICAL_IN_PROGRESS
+  PRACTICAL_SUBMITTED
+  EVALUATION_PENDING
+  COMPLETED
+  EXPIRED
+}
+
+model AssessmentAttempt {
+  id                   String       @id @default(cuid())
+  candidateId          String
+  assessmentId         String
+  assignedQuestionSetId String?
+  status               AttemptStatus @default(NOT_STARTED)
+  startedAt            DateTime?
+  expiresAt            DateTime?
+  mcqSubmittedAt       DateTime?
+  practicalStartedAt   DateTime?
+  practicalSubmittedAt DateTime?
+  completedAt          DateTime?
+  mcqScore             Float?
+  practicalScore       Float?
+  totalScore           Float?
+  percentage           Float?
+  result               String?
+  adminRemarks         String?      @db.Text
+
+  candidate    Candidate          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  assessment   Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionSet  QuestionSet?       @relation(fields: [assignedQuestionSetId], references: [id])
+  responses    CandidateResponse[]
+  practicalSubmission PracticalSubmission?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("assessment_attempts")
+}
+
+model CandidateResponse {
+  id               String   @id @default(cuid())
+  attemptId        String
+  questionId       String
+  selectedOptionId String?
+  isCorrect        Boolean?
+  marksAwarded     Float?
+  answeredAt       DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  attempt        AssessmentAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption QuestionOption?   @relation(fields: [selectedOptionId], references: [id])
+
+  @@unique([attemptId, questionId])
+  @@map("candidate_responses")
+}
+
+model PracticalSubmission {
+  id             String    @id @default(cuid())
+  attemptId      String    @unique
+  uploadedFile   String
+  uploadedAt     DateTime  @default(now())
+  submittedAt    DateTime?
+  score          Float?
+  evaluatorNotes String?   @db.Text
+  evaluatedBy    String?
+  evaluatedAt    DateTime?
+
+  attempt               AssessmentAttempt    @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  practicalAssessmentId String?
+  practicalAssessment   PracticalAssessment? @relation(fields: [practicalAssessmentId], references: [id])
+
+  @@map("practical_submissions")
+}
