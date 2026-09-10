@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { readFile } from "fs/promises";
-import path from "path";
 
 export async function GET(req: NextRequest) {
   const attemptId = req.nextUrl.searchParams.get("attemptId");
@@ -43,17 +41,8 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  try {
-    const filePath = path.join(process.cwd(), "public", "practical-files", practical.originalFile);
-    const fileBuffer = await readFile(filePath);
+  const origin = req.nextUrl.origin;
+  const fileUrl = `${origin}/practical-files/${encodeURIComponent(practical.originalFile)}`;
 
-    return new NextResponse(fileBuffer, {
-      headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="${practical.originalFile}"`,
-      },
-    });
-  } catch {
-    return NextResponse.json({ error: "File not available" }, { status: 404 });
-  }
+  return NextResponse.redirect(fileUrl);
 }
