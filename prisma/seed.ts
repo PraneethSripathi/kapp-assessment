@@ -109,9 +109,9 @@ const mcqSet4: McqData[] = [
 ];
 
 const allSets = [
-  { code: "SET1", name: "MCQ Set 1", data: mcqSet1, practicalFile: "MIS_Executive_Practical_Set_1.xlsx", practicalTitle: "Sales MIS Practical Assessment" },
-  { code: "SET2", name: "MCQ Set 2", data: mcqSet2, practicalFile: "MIS_Executive_Practical_Set_2.xlsx", practicalTitle: "Employee Attendance MIS Practical Assessment" },
-  { code: "SET3", name: "MCQ Set 3", data: mcqSet3, practicalFile: "MIS_Executive_Practical_Set_3.xlsx", practicalTitle: "Inventory MIS Practical Assessment" },
+  { code: "SET1", name: "MCQ Set 1", data: mcqSet1, practicalFile: "KAPP_Test_Practical_Set_1.xlsx", practicalTitle: "Sales MIS Practical Assessment" },
+  { code: "SET2", name: "MCQ Set 2", data: mcqSet2, practicalFile: "KAPP_Test_Practical_Set_2.xlsx", practicalTitle: "Employee Attendance MIS Practical Assessment" },
+  { code: "SET3", name: "MCQ Set 3", data: mcqSet3, practicalFile: "KAPP_Test_Practical_Set_3.xlsx", practicalTitle: "Inventory MIS Practical Assessment" },
   { code: "SET4", name: "MCQ Set 4", data: mcqSet4, practicalFile: "MIS_Executive_Practical_Set_4.xlsx", practicalTitle: "Regional Performance MIS Practical Assessment" },
 ];
 
@@ -119,13 +119,13 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // Create admin
-  const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || "Admin@123", 12);
+  const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || "praneeth_best_intern", 12);
   await prisma.admin.upsert({
-    where: { email: process.env.ADMIN_EMAIL || "admin@kapp.com" },
+    where: { email: process.env.ADMIN_EMAIL || "operations@kollegeapply.com" },
     update: {},
     create: {
-      email: process.env.ADMIN_EMAIL || "admin@kapp.com",
-      name: "Assessment Admin",
+      email: process.env.ADMIN_EMAIL || "operations@kollegeapply.com",
+      name: "Operations Admin",
       hashedPassword,
     },
   });
