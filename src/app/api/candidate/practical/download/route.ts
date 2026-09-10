@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+import { readFile } from "fs/promises";
+import path from "path";
 
 export async function GET(req: NextRequest) {
   const attemptId = req.nextUrl.searchParams.get("attemptId");
@@ -33,7 +35,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Practical file not configured" }, { status: 404 });
   }
 
-  // Update status to practical in progress
   if (attempt.status === "MCQ_SUBMITTED") {
     await prisma.assessmentAttempt.update({
       where: { id: attemptId },
@@ -41,8 +42,23 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const origin = req.nextUrl.origin;
-  const fileUrl = `${origin}/practical-files/${encodeURIComponent(practical.originalFile)}`;
+  // If we have a blob URL, redirect to it (works on Vercel)
+  if (practical.downloadUrl) {
+    return NextResponse.redirect(practical.downloadUrl);
+  }
 
-  return NextResponse.redirect(fileUrl);
+  // Fallback: read from filesystem (works locally)
+  try {
+    const filePath = path.join(process.cwd(), "public", "practical-files", practical.originalFile);
+    const fileBuffer = await readFile(filePath);
+
+    return new NextResponse(fileBuffer, {
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="${practical.originalFile}"`,
+      },
+    });
+  } catch {
+    return NextResponse.json({ error: "File not available" }, { status: 404 });
+  }
 }

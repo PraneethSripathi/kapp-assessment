@@ -124,6 +124,7 @@ model PracticalAssessment {
   instructions String? @db.Text
   maxMarks     Float   @default(20)
   originalFile String
+  downloadUrl  String?
 
   assessment  Assessment           @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   submissions PracticalSubmission[]
